@@ -4,6 +4,7 @@ import { walletConnect, injected, coinbaseWallet } from 'wagmi/connectors';
 import { QueryClient } from '@tanstack/react-query';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
+const SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || process.env.SEPOLIA_RPC_URL;
 
 export const wagmiConfig = createConfig({
   chains: [sepolia],
@@ -16,7 +17,7 @@ export const wagmiConfig = createConfig({
     }),
   ],
   transports: {
-    [sepolia.id]: http(),
+    [sepolia.id]: http(SEPOLIA_RPC_URL),
   },
   ssr: true,
 });

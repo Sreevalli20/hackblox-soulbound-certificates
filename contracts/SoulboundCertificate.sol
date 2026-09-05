@@ -282,22 +282,19 @@ contract SoulboundCertificate is ERC721, ERC721URIStorage, AccessControl {
 
     // ========== Soulbound implementation ==========
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId,
-        uint256 batchSize
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    function _update(address to, uint256 tokenId, address auth) 
+        internal 
+        override(ERC721) 
+        returns (address) 
+    {
+        address from = _ownerOf(tokenId);
         
-        // Only allow minting (from == address(0))
+        // Only allow minting (from == address(0)) or burning (to == address(0))
         if (from != address(0) && to != address(0)) {
             revert SoulboundTokenTransferNotAllowed();
         }
-    }
-    
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-        super._burn(tokenId);
+        
+        return super._update(to, tokenId, auth);
     }
 
     function approve(address, uint256) public pure override(ERC721, IERC721) {

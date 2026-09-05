@@ -5,23 +5,27 @@ import { useAccount, useSwitchChain } from 'wagmi';
 import { useAddIssuer, useRemoveIssuer, useUpdateIssuer, useIsAuthorizedIssuer } from '@/hooks/useContract';
 import { Button } from '@/components/ui/Button';
 import { isContractConfigured } from '@/lib/wagmi-config';
+import { isDemoAuthorizedIssuer, DEMO_ISSUERS } from '@/lib/demo-data';
 import { sepolia } from 'wagmi/chains';
 
 export default function AdminDashboard() {
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
+  const isDemoMode = !isContractConfigured();
+  
   const { data: isAuthorized } = useIsAuthorizedIssuer(address || '');
   
   const { addIssuer, isPending: isAdding, isSuccess: isAdded, hash: addHash } = useAddIssuer();
   const { removeIssuer, isPending: isRemoving, isSuccess: isRemoved, hash: removeHash } = useRemoveIssuer();
   const { updateIssuer, isPending: isUpdating, isSuccess: isUpdated, hash: updateHash } = useUpdateIssuer();
   
-  const [activeTab, setActiveTab] = useState<'add' | 'remove' | 'update'>('add');
+  const [activeTab, setActiveTab] = useState<'add' | 'remove' | 'update' | 'list'>('list');
   const [formData, setFormData] = useState({
     issuerAddress: '',
     name: '',
     role: '',
   });
+  const [demoAction, setDemoAction] = useState<{ type: string; message: string } | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -31,6 +35,12 @@ export default function AdminDashboard() {
   };
 
   const handleAddIssuer = async () => {
+    if (isDemoMode) {
+      setDemoAction({ type: 'add', message: `Issuer "${formData.name}" added (DEMO MODE)` });
+      setTimeout(() => setDemoAction(null), 3000);
+      setFormData({ issuerAddress: '', name: '', role: '' });
+      return;
+    }
     try {
       await addIssuer(
         formData.issuerAddress as `0x${string}`,
@@ -44,6 +54,12 @@ export default function AdminDashboard() {
   };
 
   const handleRemoveIssuer = async () => {
+    if (isDemoMode) {
+      setDemoAction({ type: 'remove', message: `Issuer removed (DEMO MODE)` });
+      setTimeout(() => setDemoAction(null), 3000);
+      setFormData({ issuerAddress: '', name: '', role: '' });
+      return;
+    }
     try {
       await removeIssuer(formData.issuerAddress as `0x${string}`);
       setFormData({ issuerAddress: '', name: '', role: '' });
@@ -53,6 +69,12 @@ export default function AdminDashboard() {
   };
 
   const handleUpdateIssuer = async () => {
+    if (isDemoMode) {
+      setDemoAction({ type: 'update', message: `Issuer updated (DEMO MODE)` });
+      setTimeout(() => setDemoAction(null), 3000);
+      setFormData({ issuerAddress: '', name: '', role: '' });
+      return;
+    }
     try {
       await updateIssuer(
         formData.issuerAddress as `0x${string}`,
@@ -65,7 +87,11 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!isContractConfigured()) {
+  // Demo mode authorization check
+  const demoIsAuthorized = isDemoMode; // Allow demo mode access for all
+  const displayIsAuthorized = isDemoMode ? demoIsAuthorized : isAuthorized;
+
+  if (!isDemoMode && !isContractConfigured()) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -80,7 +106,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!isConnected) {
+  if (!isDemoMode && !isConnected) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -98,7 +124,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (chain?.id !== sepolia.id) {
+  if (!isDemoMode && chain?.id !== sepolia.id) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -118,7 +144,7 @@ export default function AdminDashboard() {
 
   // Note: In a real app, you'd check for DEFAULT_ADMIN_ROLE instead of ISSUER_ROLE
   // For demo purposes, we'll allow any authorized issuer to see this page
-  if (isAuthorized === false) {
+  if (displayIsAuthorized === false) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -168,6 +194,16 @@ export default function AdminDashboard() {
         <div className="border-b border-gray-200 mb-8">
           <nav className="-mb-px flex space-x-8">
             <button
+              onClick={() => setActiveTab('list')}
+              className={`${
+                activeTab === 'list'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              List Issuers
+            </button>
+            <button
               onClick={() => setActiveTab('add')}
               className={`${
                 activeTab === 'add'
@@ -199,6 +235,46 @@ export default function AdminDashboard() {
             </button>
           </nav>
         </div>
+
+        {/* Demo Action Notification */}
+        {demoAction && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
+            <p className="text-amber-900">{demoAction.message}</p>
+          </div>
+        )}
+
+        {/* List Issuers Tab */}
+        {activeTab === 'list' && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Authorized Issuers</h2>
+            <div className="space-y-4">
+              {(isDemoMode ? DEMO_ISSUERS : []).map((issuer) => (
+                <div key={issuer.address} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">{issuer.name}</p>
+                      <p className="text-sm text-gray-600">{issuer.role}</p>
+                      <p className="text-sm text-gray-500 font-mono mt-1">{issuer.address}</p>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      issuer.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {issuer.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {isDemoMode && DEMO_ISSUERS.length === 0 && (
+                <p className="text-gray-500 text-center py-4">No issuers in demo mode</p>
+              )}
+              {!isDemoMode && (
+                <p className="text-gray-500 text-center py-4">
+                  Connect to the contract to view real issuers
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Add Issuer Form */}
         {activeTab === 'add' && (
@@ -262,7 +338,7 @@ export default function AdminDashboard() {
                 onClick={handleAddIssuer}
                 disabled={isAdding || !formData.issuerAddress || !formData.name || !formData.role}
               >
-                {isAdding ? 'Adding...' : 'Add Issuer'}
+                {isAdding ? 'Adding...' : isDemoMode ? 'Add Issuer (Demo)' : 'Add Issuer'}
               </Button>
             </div>
           </div>
@@ -311,7 +387,7 @@ export default function AdminDashboard() {
                 variant="outline"
                 className="text-red-600 border-red-300 hover:bg-red-50"
               >
-                {isRemoving ? 'Removing...' : 'Remove Issuer'}
+                {isRemoving ? 'Removing...' : isDemoMode ? 'Remove Issuer (Demo)' : 'Remove Issuer'}
               </Button>
             </div>
           </div>
@@ -379,9 +455,18 @@ export default function AdminDashboard() {
                 onClick={handleUpdateIssuer}
                 disabled={isUpdating || !formData.issuerAddress || !formData.name || !formData.role}
               >
-                {isUpdating ? 'Updating...' : 'Update Issuer'}
+                {isUpdating ? 'Updating...' : isDemoMode ? 'Update Issuer (Demo)' : 'Update Issuer'}
               </Button>
             </div>
+          </div>
+        )}
+        {isDemoMode && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-amber-900 mb-2">Demo Mode Active</h3>
+            <p className="text-amber-800 text-sm">
+              You can test the issuer management workflow in demo mode. No real blockchain transactions will occur.
+              To manage real issuers, deploy the smart contract and configure NEXT_PUBLIC_CONTRACT_ADDRESS.
+            </p>
           </div>
         )}
       </div>

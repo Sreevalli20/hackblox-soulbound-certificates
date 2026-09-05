@@ -8,6 +8,7 @@ Soulbound Certificates enables authorized institutions to issue tamper-resistant
 - **Non-transferable**: Certificates cannot be sold, traded, or transferred between wallets
 - **Instantly verifiable**: Anyone can verify authenticity on-chain without contacting the issuer
 - **Cryptographically secure**: Built on Ethereum with OpenZeppelin contracts
+- **Demo mode ready**: Works fully without contract deployment for demonstration purposes
 - **Decentralized metadata**: IPFS integration with local fallback for demo mode
 
 ## Features
@@ -22,6 +23,7 @@ Soulbound Certificates enables authorized institutions to issue tamper-resistant
 - Custom errors for better security and gas optimization
 
 ### Frontend Features
+- **Demo Mode**: Fully functional without contract deployment for demonstrations
 - Wallet connection with MetaMask support
 - Network detection (Sepolia testnet)
 - Public verification page (by token ID or wallet address)
@@ -32,6 +34,7 @@ Soulbound Certificates enables authorized institutions to issue tamper-resistant
 - Blockchain explorer integration (Sepolia Etherscan)
 - Responsive design with Tailwind CSS
 - Premium dark theme with glass morphism effects
+- Demo mode banner indicator when contract not configured
 
 ## Tech Stack
 
@@ -98,7 +101,8 @@ Soulbound Certificates enables authorized institutions to issue tamper-resistant
 Copy `env.example` to `.env.local` and configure:
 
 ```env
-# Required for frontend to work
+# Optional: Deployed contract address for REAL SEPOLIA MODE
+# If not set, the app automatically uses DEMO MODE with simulated data
 NEXT_PUBLIC_CONTRACT_ADDRESS=your_deployed_contract_address_here
 
 # Optional: Pinata JWT for IPFS metadata upload (DO NOT commit actual JWT)
@@ -116,6 +120,8 @@ NEXT_PUBLIC_CONTRACT_ADDRESS=your_deployed_contract_address_here
 ```
 
 **Important**: Never commit `.env.local` or any file containing private keys or API keys to GitHub.
+
+**Demo Mode**: If `NEXT_PUBLIC_CONTRACT_ADDRESS` is not set, the app automatically runs in demo mode with simulated blockchain data. This allows full demonstration of the UI and workflows without requiring contract deployment.
 
 ## Installation
 
@@ -189,11 +195,56 @@ The build will succeed even without a configured contract address (shows warning
 
 ## Demo Flow
 
+### Demo Mode vs Real Sepolia Mode
+
+The application supports two modes:
+
+**Demo Mode** (default, no contract required):
+- Activated when `NEXT_PUBLIC_CONTRACT_ADDRESS` is not set
+- Uses simulated blockchain data
+- Full UI and workflow demonstration
+- No wallet connection required for verification
+- No gas costs
+- Shows "Demo Mode" banner at top of page
+
+**Real Sepolia Mode** (requires contract deployment):
+- Activated when `NEXT_PUBLIC_CONTRACT_ADDRESS` is configured
+- Connects to actual deployed smart contract
+- Real blockchain transactions
+- Requires wallet connection
+- Requires Sepolia ETH for gas
+- Full on-chain verification
+
 ### Sample Participant Name
 For all demo certificates, use the name:
 **Kommavarapu Kanmeswari Sreevalli**
 
-### End-to-End Demo
+### Demo Mode Demo Flow (No Contract Required)
+
+1. **Open the application** - Navigate to the deployed Vercel app
+2. **View Demo Mode Banner** - Notice the amber banner indicating demo mode
+3. **Verify Demo Certificate**:
+   - Navigate to `/verify`
+   - Enter token ID: `1`
+   - View the demo certificate for Kommavarapu Kanmeswari Sreevalli
+   - See "VERIFIED (DEMO MODE)" status
+4. **View Certificate Details**:
+   - Click "View Full Certificate"
+   - See certificate with QR code generation
+   - Generate QR code for verification
+5. **View Issuers**:
+   - Navigate to `/issuers`
+   - See demo issuers list (HackBlox University, Computer Science Department)
+6. **Test Issuer Dashboard UI**:
+   - Navigate to `/issuer`
+   - View the issuer dashboard interface
+   - See demo mode indicators
+7. **Test Admin Dashboard UI**:
+   - Navigate to `/admin`
+   - View issuer management interface
+   - See demo issuers list
+
+### Real Sepolia Mode Demo Flow (Contract Required)
 
 1. **Admin Setup** (one-time):
    - Deploy contract as admin
@@ -414,18 +465,33 @@ Kommavarapu Kanmeswari Sreevalli
 
 ### 2-Minute Judge Demo Flow
 
+**Demo Mode (No Contract Required - Immediate Demo):**
+
+1. **Open live app** - Navigate to https://r-ten-topaz.vercel.app
+2. **Notice Demo Mode** - See amber banner indicating demo mode
+3. **Verify demo certificate** - Navigate to `/verify`, enter token ID `1`, see verified status
+4. **View certificate details** - Click "View Full Certificate", see premium certificate design
+5. **Generate QR code** - Click "Generate QR", show verification QR code
+6. **View issuers** - Navigate to `/issuers`, see demo issuers list
+7. **Show issuer dashboard** - Navigate to `/issuer`, show minting interface
+8. **Show admin dashboard** - Navigate to `/admin`, show issuer management UI
+9. **Explain demo mode** - Explain that this demonstrates full UI without contract deployment
+10. **Explain real mode** - Explain that adding contract address enables real blockchain mode
+
+**Real Sepolia Mode (Contract Required - Full Blockchain Demo):**
+
 1. **Open live app** - Navigate to https://r-ten-topaz.vercel.app
 2. **Connect wallet** - Click "Connect Wallet" in the navigation bar
-3. **Show issuer authorization** - Navigate to `/issuer` to see the issuer dashboard (requires contract deployment)
-4. **Mint certificate** - Fill in certificate details and issue to a test wallet (requires contract deployment)
-5. **Show blockchain transaction** - View the transaction on Sepolia Etherscan (requires contract deployment)
-6. **Verify certificate** - Navigate to `/verify` and enter the token ID (requires contract deployment)
-7. **Show QR verification** - Generate QR code on certificate detail page (requires contract deployment)
-8. **Revoke certificate** - As authorized issuer, revoke with reason (requires contract deployment)
-9. **Verify REVOKED status** - Check verification shows REVOKED status (requires contract deployment)
+3. **Show issuer authorization** - Navigate to `/issuer` to see the issuer dashboard
+4. **Mint certificate** - Fill in certificate details and issue to a test wallet
+5. **Show blockchain transaction** - View the transaction on Sepolia Etherscan
+6. **Verify certificate** - Navigate to `/verify` and enter the token ID
+7. **Show QR verification** - Generate QR code on certificate detail page
+8. **Revoke certificate** - As authorized issuer, revoke with reason
+9. **Verify REVOKED status** - Check verification shows REVOKED status
 10. **Explain soulbound transfer restriction** - Demonstrate that transferFrom is blocked by smart contract
 
-**Note:** Full blockchain functionality requires the smart contract to be deployed to Sepolia. The frontend is deployed and functional, awaiting contract deployment configuration.
+**Note:** The application is fully functional in demo mode without contract deployment. Real blockchain functionality requires the smart contract to be deployed to Sepolia and `NEXT_PUBLIC_CONTRACT_ADDRESS` to be configured.
 
 ## License
 

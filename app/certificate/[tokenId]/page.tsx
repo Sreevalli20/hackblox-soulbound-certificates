@@ -5,17 +5,23 @@ import { useCertificate, useVerifyCertificate } from '@/hooks/useContract';
 import { Button } from '@/components/ui/Button';
 import QRCode from 'react-qr-code';
 import { isContractConfigured } from '@/lib/wagmi-config';
+import { getDemoCertificate, verifyDemoCertificate } from '@/lib/demo-data';
 
 export default function CertificateDetailPage({ params }: { params: { tokenId: string } }) {
   const tokenId = BigInt(params.tokenId);
+  const isDemoMode = !isContractConfigured();
   
   const { data: certificate, isLoading, error } = useCertificate(tokenId);
   const { data: isValid } = useVerifyCertificate(tokenId);
   
+  // Demo mode data
+  const demoCertificate = isDemoMode ? getDemoCertificate(params.tokenId) : null;
+  const demoIsValid = isDemoMode && demoCertificate ? verifyDemoCertificate(params.tokenId) : false;
+  
   const [showQR, setShowQR] = useState(false);
 
-  const formatDate = (timestamp: bigint) => {
-    const date = new Date(Number(timestamp) * 1000);
+  const formatDate = (timestamp: bigint | string) => {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(Number(timestamp) * 1000);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -34,22 +40,12 @@ export default function CertificateDetailPage({ params }: { params: { tokenId: s
     return `/verify?tokenId=${params.tokenId}`;
   };
 
-  if (!isContractConfigured()) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Contract Not Configured</h3>
-            <p className="text-gray-600">
-              Please set NEXT_PUBLIC_CONTRACT_ADDRESS in your environment variables.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const displayCertificate = isDemoMode ? demoCertificate : certificate;
+  const displayIsLoading = isDemoMode ? false : isLoading;
+  const displayError = isDemoMode ? (!demoCertificate) : error;
+  const displayIsValid = isDemoMode ? demoIsValid : isValid;
 
-  if (isLoading) {
+  if (displayIsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -60,7 +56,7 @@ export default function CertificateDetailPage({ params }: { params: { tokenId: s
     );
   }
 
-  if (error || !certificate) {
+  if (displayError || !displayCertificate) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -69,6 +65,11 @@ export default function CertificateDetailPage({ params }: { params: { tokenId: s
             <p className="text-gray-600 mb-4">
               No certificate exists with token ID {params.tokenId}
             </p>
+            {isDemoMode && (
+              <p className="text-sm text-gray-500 mb-4">
+                Try token ID: <strong>1</strong> for the demo certificate
+              </p>
+            )}
             <Button onClick={() => window.location.href = '/verify'}>
               Search for Certificate
             </Button>
@@ -78,9 +79,9 @@ export default function CertificateDetailPage({ params }: { params: { tokenId: s
     );
   }
 
-  const cert = certificate as any;
+  const cert = displayCertificate as any;
   const isRevoked = cert.isRevoked;
-  const isVerified = isValid && !isRevoked;
+  const isVerified = displayIsValid && !isRevoked;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -112,7 +113,7 @@ export default function CertificateDetailPage({ params }: { params: { tokenId: s
                 )}
                 <div>
                   <h2 className={`text-2xl font-bold text-white`}>
-                    {isVerified ? '✓ VERIFIED ON-CHAIN' : '✕ CERTIFICATE REVOKED'}
+                    {isDemoMode ? (isVerified ? '✓ VERIFIED (DEMO MODE)' : '✕ CERTIFICATE REVOKED') : (isVerified ? '✓ VERIFIED ON-CHAIN' : '✕ CERTIFICATE REVOKED')}
                   </h2>
                   {isRevoked && (
                     <p className="text-white/80 text-sm mt-1">
@@ -256,12 +257,14 @@ export default function CertificateDetailPage({ params }: { params: { tokenId: s
 
             {/* Actions */}
             <div className="mt-8 pt-6 border-t flex flex-wrap gap-4">
-              <Button
-                onClick={() => window.open(`https://sepolia.etherscan.io/token/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}?a=${params.tokenId}`, '_blank')}
-                variant="outline"
-              >
-                View on Etherscan
-              </Button>
+              {!isDemoMode && (
+                <Button
+                  onClick={() => window.open(`https://sepolia.etherscan.io/token/${process.env.NEXT_PUBLIC_CONTRACT_ADDRESS}?a=${params.tokenId}`, '_blank')}
+                  variant="outline"
+                >
+                  View on Etherscan
+                </Button>
+              )}
               <Button
                 onClick={() => window.location.href = '/verify'}
                 variant="ghost"
@@ -275,7 +278,7 @@ export default function CertificateDetailPage({ params }: { params: { tokenId: s
         {/* Footer Note */}
         <div className="mt-8 text-center text-sm text-gray-600">
           <p>
-            This certificate is secured on the Ethereum Sepolia testnet and cannot be transferred or modified.
+            {isDemoMode ? 'This is a demo certificate for demonstration purposes.' : 'This certificate is secured on the Ethereum Sepolia testnet and cannot be transferred or modified.'}
           </p>
           <p className="mt-1">
             Built for HackBlox 2026 by Kommavarapu Kanmeswari Sreevalli

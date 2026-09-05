@@ -6,11 +6,14 @@ import { useIssueCertificate, useIsAuthorizedIssuer, useRecipientCertificates, u
 import { Button } from '@/components/ui/Button';
 import { isContractConfigured } from '@/lib/wagmi-config';
 import { MetadataProviderFactory } from '@/lib/metadata-provider';
+import { isDemoAuthorizedIssuer, DEMO_ISSUERS } from '@/lib/demo-data';
 import { sepolia } from 'wagmi/chains';
 
 export default function IssuerDashboard() {
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
+  const isDemoMode = !isContractConfigured();
+  
   const { data: isAuthorized } = useIsAuthorizedIssuer(address || '');
   const { data: totalCertificates } = useTotalCertificates();
   const { data: recipientCerts } = useRecipientCertificates(address || '');
@@ -27,6 +30,8 @@ export default function IssuerDashboard() {
     grade: '',
   });
   const [previewMode, setPreviewMode] = useState(false);
+  const [demoIssued, setDemoIssued] = useState(false);
+  const [demoTokenId, setDemoTokenId] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -44,6 +49,26 @@ export default function IssuerDashboard() {
   };
 
   const handleIssue = async () => {
+    if (isDemoMode) {
+      // Demo mode - simulate issuance
+      setDemoIssued(true);
+      setDemoTokenId(Math.floor(Math.random() * 1000).toString());
+      setTimeout(() => {
+        setShowForm(false);
+        setPreviewMode(false);
+        setDemoIssued(false);
+        setFormData({
+          recipient: '',
+          recipientName: 'Kommavarapu Kanmeswari Sreevalli',
+          certificateTitle: '',
+          courseName: '',
+          institution: '',
+          grade: '',
+        });
+      }, 3000);
+      return;
+    }
+
     try {
       const metadata = MetadataProviderFactory.createCertificateMetadata(
         formData.recipientName,
@@ -82,7 +107,13 @@ export default function IssuerDashboard() {
     }
   };
 
-  if (!isContractConfigured()) {
+  // Demo mode authorization check
+  const demoIsAuthorized = isDemoMode && address ? isDemoAuthorizedIssuer(address) : false;
+  const displayIsAuthorized = isDemoMode ? demoIsAuthorized : isAuthorized;
+  const displayTotalCertificates = isDemoMode ? '1' : (totalCertificates?.toString() || '0');
+  const displayRecipientCerts = isDemoMode ? [] : (recipientCerts as any) || [];
+
+  if (!isDemoMode && !isContractConfigured()) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -97,7 +128,7 @@ export default function IssuerDashboard() {
     );
   }
 
-  if (!isConnected) {
+  if (!isDemoMode && !isConnected) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -115,7 +146,7 @@ export default function IssuerDashboard() {
     );
   }
 
-  if (chain?.id !== sepolia.id) {
+  if (!isDemoMode && chain?.id !== sepolia.id) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -133,15 +164,20 @@ export default function IssuerDashboard() {
     );
   }
 
-  if (isAuthorized === false) {
+  if (displayIsAuthorized === false) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Not Authorized</h3>
             <p className="text-gray-600 mb-4">
-              You are not authorized to issue certificates. Contact an administrator.
+              {isDemoMode ? 'In demo mode, you can view the issuer dashboard UI but cannot issue real certificates.' : 'You are not authorized to issue certificates. Contact an administrator.'}
             </p>
+            {isDemoMode && (
+              <p className="text-sm text-gray-500 mb-4">
+                Demo issuers: {DEMO_ISSUERS.map(i => i.name).join(', ')}
+              </p>
+            )}
             <Button onClick={() => window.location.href = '/'}>
               Return Home
             </Button>
@@ -168,20 +204,29 @@ export default function IssuerDashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-sm text-gray-500">Total Certificates Issued</div>
             <div className="text-3xl font-bold text-gray-900 mt-2">
-              {totalCertificates?.toString() || '0'}
+              {displayTotalCertificates}
             </div>
+            {isDemoMode && (
+              <div className="text-xs text-gray-500 mt-1">Demo Mode</div>
+            )}
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-sm text-gray-500">Your Certificates</div>
             <div className="text-3xl font-bold text-gray-900 mt-2">
-              {(recipientCerts as any)?.length || '0'}
+              {displayRecipientCerts.length || '0'}
             </div>
+            {isDemoMode && (
+              <div className="text-xs text-gray-500 mt-1">Demo Mode</div>
+            )}
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-sm text-gray-500">Authorization Status</div>
             <div className="text-3xl font-bold text-green-600 mt-2">
               Authorized
             </div>
+            {isDemoMode && (
+              <div className="text-xs text-gray-500 mt-1">Demo Mode</div>
+            )}
           </div>
         </div>
 
@@ -222,9 +267,9 @@ export default function IssuerDashboard() {
                 </div>
 
                 {/* Transaction Status */}
-                {(isPending || isConfirming || isSuccess) && (
+                {(isPending || isConfirming || isSuccess || demoIssued) && (
                   <div className={`p-4 rounded-lg ${
-                    isSuccess ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
+                    isSuccess || demoIssued ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
                   }`}>
                     {isPending && (
                       <p className="text-blue-900">Waiting for wallet confirmation...</p>
@@ -235,9 +280,17 @@ export default function IssuerDashboard() {
                     {isSuccess && (
                       <p className="text-green-900">Certificate issued successfully!</p>
                     )}
+                    {demoIssued && (
+                      <p className="text-green-900">Certificate issued (DEMO MODE)!</p>
+                    )}
                     {hash && (
                       <p className="text-sm text-gray-600 mt-2">
                         Transaction: {(hash as string).slice(0, 10)}...{(hash as string).slice(-8)}
+                      </p>
+                    )}
+                    {demoIssued && demoTokenId && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Demo Token ID: {demoTokenId}
                       </p>
                     )}
                   </div>
@@ -250,9 +303,9 @@ export default function IssuerDashboard() {
                   </Button>
                   <Button 
                     onClick={handleIssue} 
-                    disabled={isPending || isConfirming}
+                    disabled={isPending || isConfirming || demoIssued}
                   >
-                    {isPending ? 'Confirming...' : isConfirming ? 'Issuing...' : 'Issue Certificate'}
+                    {isPending ? 'Confirming...' : isConfirming ? 'Issuing...' : demoIssued ? 'Issuing (Demo)...' : isDemoMode ? 'Issue Certificate (Demo)' : 'Issue Certificate'}
                   </Button>
                 </div>
               </div>
@@ -362,11 +415,11 @@ export default function IssuerDashboard() {
         )}
 
         {/* Recent Certificates */}
-        {recipientCerts && (recipientCerts as any).length > 0 && (
+        {displayRecipientCerts.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Recent Certificates</h2>
             <div className="space-y-4">
-              {(recipientCerts as any).slice(0, 5).map((tokenId: bigint) => (
+              {displayRecipientCerts.slice(0, 5).map((tokenId: bigint) => (
                 <div key={tokenId.toString()} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
                   <div>
                     <p className="font-medium text-gray-900">Token ID: {tokenId.toString()}</p>
@@ -382,6 +435,15 @@ export default function IssuerDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {isDemoMode && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-amber-900 mb-2">Demo Mode Active</h3>
+            <p className="text-amber-800 text-sm">
+              You can test the certificate issuance workflow in demo mode. No real blockchain transactions will occur.
+              To issue real certificates, deploy the smart contract and configure NEXT_PUBLIC_CONTRACT_ADDRESS.
+            </p>
           </div>
         )}
       </div>

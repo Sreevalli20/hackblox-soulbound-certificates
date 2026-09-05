@@ -5,15 +5,21 @@ import { useAccount } from 'wagmi';
 import { useIssuerInfo, useIsAuthorizedIssuer } from '@/hooks/useContract';
 import { Button } from '@/components/ui/Button';
 import { isContractConfigured } from '@/lib/wagmi-config';
+import { getDemoIssuer, getAllDemoIssuers } from '@/lib/demo-data';
 
 export default function IssuersPage() {
   const { address } = useAccount();
   const { data: isAuthorized } = useIsAuthorizedIssuer(address || '');
+  const isDemoMode = !isContractConfigured();
   
   const [searchAddress, setSearchAddress] = useState('');
   const [searched, setSearched] = useState(false);
   
   const { data: issuerInfo, isLoading } = useIssuerInfo(searchAddress || '');
+
+  // Demo mode data
+  const demoIssuerInfo = isDemoMode && searched ? getDemoIssuer(searchAddress) : null;
+  const allDemoIssuers = isDemoMode ? getAllDemoIssuers() : [];
 
   const handleSearch = () => {
     if (searchAddress) {
@@ -25,7 +31,10 @@ export default function IssuersPage() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  if (!isContractConfigured()) {
+  const displayIssuerInfo = isDemoMode ? demoIssuerInfo : issuerInfo;
+  const displayIsLoading = isDemoMode ? false : isLoading;
+
+  if (!isDemoMode && !isContractConfigured()) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -69,12 +78,12 @@ export default function IssuersPage() {
         {/* Search Results */}
         {searched && (
           <div className="bg-white rounded-lg shadow-lg p-6">
-            {isLoading ? (
+            {displayIsLoading ? (
               <div className="text-center py-8">
                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <p className="mt-2 text-gray-600">Loading issuer information...</p>
               </div>
-            ) : issuerInfo && (issuerInfo as any).isActive ? (
+            ) : displayIssuerInfo && (displayIssuerInfo as any).isActive ? (
               <div>
                 <div className="flex items-center gap-4 mb-6">
                   <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center">
@@ -83,8 +92,8 @@ export default function IssuersPage() {
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{(issuerInfo as any).name}</h2>
-                    <p className="text-gray-600">{(issuerInfo as any).role}</p>
+                    <h2 className="text-2xl font-bold text-gray-900">{(displayIssuerInfo as any).name}</h2>
+                    <p className="text-gray-600">{(displayIssuerInfo as any).role}</p>
                   </div>
                   <div className="ml-auto">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
@@ -100,12 +109,15 @@ export default function IssuersPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Role</p>
-                    <p className="font-medium text-gray-900">{(issuerInfo as any).role}</p>
+                    <p className="font-medium text-gray-900">{(displayIssuerInfo as any).role}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Added Date</p>
                     <p className="font-medium text-gray-900">
-                      {new Date(Number((issuerInfo as any).addedDate) * 1000).toLocaleDateString()}
+                      {isDemoMode 
+                        ? new Date((displayIssuerInfo as any).addedDate).toLocaleDateString()
+                        : new Date(Number((displayIssuerInfo as any).addedDate) * 1000).toLocaleDateString()
+                      }
                     </p>
                   </div>
                   <div>
@@ -115,12 +127,14 @@ export default function IssuersPage() {
                 </div>
 
                 <div className="mt-6 pt-6 border-t">
-                  <Button
-                    onClick={() => window.open(`https://sepolia.etherscan.io/address/${searchAddress}`, '_blank')}
-                    variant="outline"
-                  >
-                    View on Etherscan
-                  </Button>
+                  {!isDemoMode && (
+                    <Button
+                      onClick={() => window.open(`https://sepolia.etherscan.io/address/${searchAddress}`, '_blank')}
+                      variant="outline"
+                    >
+                      View on Etherscan
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : (
@@ -134,8 +148,38 @@ export default function IssuersPage() {
                 <p className="text-gray-600">
                   The address {formatAddress(searchAddress)} is not an authorized issuer.
                 </p>
+                {isDemoMode && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Try: {allDemoIssuers.map(i => i.address.slice(0, 10) + '...').join(', ')}
+                  </p>
+                )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* All Issuers List (Demo Mode) */}
+        {isDemoMode && (
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">All Demo Issuers</h2>
+            <div className="space-y-4">
+              {allDemoIssuers.map((issuer) => (
+                <div key={issuer.address} className="border rounded-lg p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-gray-900">{issuer.name}</p>
+                      <p className="text-sm text-gray-600">{issuer.role}</p>
+                      <p className="text-sm text-gray-500 font-mono mt-1">{issuer.address}</p>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      issuer.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {issuer.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

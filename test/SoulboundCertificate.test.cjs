@@ -20,7 +20,7 @@ describe("SoulboundCertificate", function () {
       CONTRACT_SYMBOL,
       owner.address
     );
-    await contract.deployed();
+    await contract.waitForDeployment();
   });
 
   describe("Deployment", function () {

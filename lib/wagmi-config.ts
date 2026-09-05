@@ -3,8 +3,9 @@ import { sepolia } from 'wagmi/chains';
 import { walletConnect, injected, coinbaseWallet } from 'wagmi/connectors';
 import { QueryClient } from '@tanstack/react-query';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
-const SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || process.env.SEPOLIA_RPC_URL;
+// Production: Always use the real Sepolia contract
+const CONTRACT_ADDRESS = '0x43aF2D5749758E2668d46Cb5BA1A2Efc74C27Cc8';
+const SEPOLIA_RPC_URL = process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || process.env.SEPOLIA_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/alch_zmsob4pfTIgtVW0AIhpym';
 
 export const wagmiConfig = createConfig({
   chains: [sepolia],
@@ -25,12 +26,9 @@ export const wagmiConfig = createConfig({
 export const queryClient = new QueryClient();
 
 export function getContractAddress(): string {
-  if (!CONTRACT_ADDRESS) {
-    console.warn('Contract address not configured. Set NEXT_PUBLIC_CONTRACT_ADDRESS in .env.local');
-  }
   return CONTRACT_ADDRESS;
 }
 
 export function isContractConfigured(): boolean {
-  return !!CONTRACT_ADDRESS;
+  return true; // Always configured in production
 }

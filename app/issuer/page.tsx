@@ -9,10 +9,11 @@ import { MetadataProviderFactory } from '@/lib/metadata-provider';
 import { isDemoAuthorizedIssuer, DEMO_ISSUERS } from '@/lib/demo-data';
 import { sepolia } from 'wagmi/chains';
 
+export const dynamic = 'force-dynamic';
+
 export default function IssuerDashboard() {
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
-  const isDemoMode = !isContractConfigured();
   
   const { data: isAuthorized } = useIsAuthorizedIssuer(address || '');
   const { data: totalCertificates } = useTotalCertificates();
@@ -49,25 +50,6 @@ export default function IssuerDashboard() {
   };
 
   const handleIssue = async () => {
-    if (isDemoMode) {
-      // Demo mode - simulate issuance
-      setDemoIssued(true);
-      setDemoTokenId(Math.floor(Math.random() * 1000).toString());
-      setTimeout(() => {
-        setShowForm(false);
-        setPreviewMode(false);
-        setDemoIssued(false);
-        setFormData({
-          recipient: '',
-          recipientName: 'Kommavarapu Kanmeswari Sreevalli',
-          certificateTitle: '',
-          courseName: '',
-          institution: '',
-          grade: '',
-        });
-      }, 3000);
-      return;
-    }
 
     try {
       const metadata = MetadataProviderFactory.createCertificateMetadata(
@@ -107,28 +89,11 @@ export default function IssuerDashboard() {
     }
   };
 
-  // Demo mode authorization check
-  const demoIsAuthorized = isDemoMode && address ? isDemoAuthorizedIssuer(address) : false;
-  const displayIsAuthorized = isDemoMode ? demoIsAuthorized : isAuthorized;
-  const displayTotalCertificates = isDemoMode ? '1' : (totalCertificates?.toString() || '0');
-  const displayRecipientCerts = isDemoMode ? [] : (recipientCerts as any) || [];
+  const displayIsAuthorized = isAuthorized;
+  const displayTotalCertificates = totalCertificates?.toString() || '0';
+  const displayRecipientCerts = (recipientCerts as any) || [];
 
-  if (!isDemoMode && !isContractConfigured()) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Contract Not Configured</h3>
-            <p className="text-gray-600">
-              Please set NEXT_PUBLIC_CONTRACT_ADDRESS in your environment variables.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isDemoMode && !isConnected) {
+  if (!isConnected) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -146,7 +111,7 @@ export default function IssuerDashboard() {
     );
   }
 
-  if (!isDemoMode && chain?.id !== sepolia.id) {
+  if (chain?.id !== sepolia.id) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -171,13 +136,8 @@ export default function IssuerDashboard() {
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Not Authorized</h3>
             <p className="text-gray-600 mb-4">
-              {isDemoMode ? 'In demo mode, you can view the issuer dashboard UI but cannot issue real certificates.' : 'You are not authorized to issue certificates. Contact an administrator.'}
+              You are not authorized to issue certificates. Contact an administrator.
             </p>
-            {isDemoMode && (
-              <p className="text-sm text-gray-500 mb-4">
-                Demo issuers: {DEMO_ISSUERS.map(i => i.name).join(', ')}
-              </p>
-            )}
             <Button onClick={() => window.location.href = '/'}>
               Return Home
             </Button>
@@ -206,27 +166,18 @@ export default function IssuerDashboard() {
             <div className="text-3xl font-bold text-gray-900 mt-2">
               {displayTotalCertificates}
             </div>
-            {isDemoMode && (
-              <div className="text-xs text-gray-500 mt-1">Demo Mode</div>
-            )}
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-sm text-gray-500">Your Certificates</div>
             <div className="text-3xl font-bold text-gray-900 mt-2">
               {displayRecipientCerts.length || '0'}
             </div>
-            {isDemoMode && (
-              <div className="text-xs text-gray-500 mt-1">Demo Mode</div>
-            )}
           </div>
           <div className="bg-white rounded-lg shadow p-6">
             <div className="text-sm text-gray-500">Authorization Status</div>
             <div className="text-3xl font-bold text-green-600 mt-2">
               Authorized
             </div>
-            {isDemoMode && (
-              <div className="text-xs text-gray-500 mt-1">Demo Mode</div>
-            )}
           </div>
         </div>
 
@@ -305,7 +256,7 @@ export default function IssuerDashboard() {
                     onClick={handleIssue} 
                     disabled={isPending || isConfirming || demoIssued}
                   >
-                    {isPending ? 'Confirming...' : isConfirming ? 'Issuing...' : demoIssued ? 'Issuing (Demo)...' : isDemoMode ? 'Issue Certificate (Demo)' : 'Issue Certificate'}
+                    {isPending ? 'Confirming...' : isConfirming ? 'Issuing...' : 'Issue Certificate'}
                   </Button>
                 </div>
               </div>
@@ -435,15 +386,6 @@ export default function IssuerDashboard() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        {isDemoMode && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-amber-900 mb-2">Demo Mode Active</h3>
-            <p className="text-amber-800 text-sm">
-              You can test the certificate issuance workflow in demo mode. No real blockchain transactions will occur.
-              To issue real certificates, deploy the smart contract and configure NEXT_PUBLIC_CONTRACT_ADDRESS.
-            </p>
           </div>
         )}
       </div>

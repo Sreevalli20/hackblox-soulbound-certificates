@@ -455,10 +455,13 @@ https://github.com/Sreevalli20/hackblox-soulbound-certificates.git
 Ethereum Sepolia (Chain ID: 11155111)
 
 **Contract:**
-*Contract deployment pending - requires PRIVATE_KEY environment variable*
+0x43aF2D5749758E2668d46Cb5BA1A2Efc74C27Cc8
 
 **Explorer:**
-*Contract verification pending - requires deployed contract*
+https://sepolia.etherscan.io/address/0x43aF2D5749758E2668d46Cb5BA1A2Efc74C27Cc8
+
+**Deployment Transaction:**
+https://sepolia.etherscan.io/tx/0xb96116005589fea4ccaa76f8677871fe9e3bed1012b8db2cddf1741ba4d21a73
 
 **Demo Identity:**
 Kommavarapu Kanmeswari Sreevalli

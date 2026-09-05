@@ -8,6 +8,8 @@ import { isContractConfigured } from '@/lib/wagmi-config';
 import { isDemoAuthorizedIssuer, DEMO_ISSUERS } from '@/lib/demo-data';
 import { sepolia } from 'wagmi/chains';
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminDashboard() {
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();

@@ -392,6 +392,41 @@ Expected output: 16 passing tests
 **Track**: Web3 Track
 **Problem Statement**: PS2 - On-Chain Verifiable Credentials (Soulbound Certificates)
 
+## Live Demo
+
+**Live App:**
+https://r-ten-topaz.vercel.app
+
+**GitHub:**
+https://github.com/Sreevalli20/hackblox-soulbound-certificates.git
+
+**Network:**
+Ethereum Sepolia (Chain ID: 11155111)
+
+**Contract:**
+*Contract deployment pending - requires PRIVATE_KEY environment variable*
+
+**Explorer:**
+*Contract verification pending - requires deployed contract*
+
+**Demo Identity:**
+Kommavarapu Kanmeswari Sreevalli
+
+### 2-Minute Judge Demo Flow
+
+1. **Open live app** - Navigate to https://r-ten-topaz.vercel.app
+2. **Connect wallet** - Click "Connect Wallet" in the navigation bar
+3. **Show issuer authorization** - Navigate to `/issuer` to see the issuer dashboard (requires contract deployment)
+4. **Mint certificate** - Fill in certificate details and issue to a test wallet (requires contract deployment)
+5. **Show blockchain transaction** - View the transaction on Sepolia Etherscan (requires contract deployment)
+6. **Verify certificate** - Navigate to `/verify` and enter the token ID (requires contract deployment)
+7. **Show QR verification** - Generate QR code on certificate detail page (requires contract deployment)
+8. **Revoke certificate** - As authorized issuer, revoke with reason (requires contract deployment)
+9. **Verify REVOKED status** - Check verification shows REVOKED status (requires contract deployment)
+10. **Explain soulbound transfer restriction** - Demonstrate that transferFrom is blocked by smart contract
+
+**Note:** Full blockchain functionality requires the smart contract to be deployed to Sepolia. The frontend is deployed and functional, awaiting contract deployment configuration.
+
 ## License
 
 MIT License - Feel free to use this project for learning and development.

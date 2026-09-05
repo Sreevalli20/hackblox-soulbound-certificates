@@ -3,6 +3,8 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "env": {
-    "NEXT_PUBLIC_CHAIN_ID": "11155111"
+    "NEXT_PUBLIC_CHAIN_ID": "11155111",
+    "NEXT_PUBLIC_CONTRACT_ADDRESS": "0x43aF2D5749758E2668d46Cb5BA1A2Efc74C27Cc8",
+    "NEXT_PUBLIC_SEPOLIA_RPC_URL": "https://eth-sepolia.g.alchemy.com/v2/alch_zmsob4pfTIgtVW0AIhpym"
   }
 }

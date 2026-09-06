@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("SoulboundCertificate", function () {
+  this.timeout(30000);
   let contract;
   let owner;
   let issuer;
@@ -22,6 +23,19 @@ describe("SoulboundCertificate", function () {
     );
     await contract.waitForDeployment();
   });
+
+  // Helper function to issue a certificate - reduces code duplication
+  async function issueTestCertificate() {
+    await contract.issueCertificate(
+      recipient.address,
+      "Kommavarapu Kanmeswari Sreevalli",
+      "Test Certificate",
+      "Test Course",
+      "Test Institution",
+      "A",
+      "ipfs://QmTest"
+    );
+  }
 
   describe("Deployment", function () {
     it("Should set the correct name and symbol", async function () {
@@ -145,15 +159,7 @@ describe("SoulboundCertificate", function () {
 
   describe("Soulbound Behavior", function () {
     beforeEach(async function () {
-      await contract.issueCertificate(
-        recipient.address,
-        "Kommavarapu Kanmeswari Sreevalli",
-        "Test Certificate",
-        "Test Course",
-        "Test Institution",
-        "A",
-        "ipfs://QmTest"
-      );
+      await issueTestCertificate();
     });
 
     it("Should not allow transferFrom", async function () {
@@ -177,15 +183,7 @@ describe("SoulboundCertificate", function () {
 
   describe("Certificate Revocation", function () {
     beforeEach(async function () {
-      await contract.issueCertificate(
-        recipient.address,
-        "Kommavarapu Kanmeswari Sreevalli",
-        "Test Certificate",
-        "Test Course",
-        "Test Institution",
-        "A",
-        "ipfs://QmTest"
-      );
+      await issueTestCertificate();
     });
 
     it("Should allow issuer to revoke certificate", async function () {
@@ -207,30 +205,12 @@ describe("SoulboundCertificate", function () {
 
   describe("Certificate Verification", function () {
     it("Should verify valid certificate as true", async function () {
-      await contract.issueCertificate(
-        recipient.address,
-        "Kommavarapu Kanmeswari Sreevalli",
-        "Test Certificate",
-        "Test Course",
-        "Test Institution",
-        "A",
-        "ipfs://QmTest"
-      );
-
+      await issueTestCertificate();
       expect(await contract.verifyCertificate(0)).to.be.true;
     });
 
     it("Should verify revoked certificate as false", async function () {
-      await contract.issueCertificate(
-        recipient.address,
-        "Kommavarapu Kanmeswari Sreevalli",
-        "Test Certificate",
-        "Test Course",
-        "Test Institution",
-        "A",
-        "ipfs://QmTest"
-      );
-
+      await issueTestCertificate();
       await contract.revokeCertificate(0, "Test");
       expect(await contract.verifyCertificate(0)).to.be.false;
     });

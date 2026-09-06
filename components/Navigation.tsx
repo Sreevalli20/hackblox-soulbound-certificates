@@ -3,9 +3,19 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { WalletConnect } from './WalletConnect';
+import { useEffect, useState } from 'react';
 
 export function Navigation() {
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   const navItems = [
     { href: '/', label: 'Home' },

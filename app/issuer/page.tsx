@@ -14,7 +14,8 @@ export const dynamic = 'force-dynamic';
 export default function IssuerDashboard() {
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
-  
+
+  // Call wagmi hooks directly - the providers handle hydration
   const { data: isAuthorized } = useIsAuthorizedIssuer(address || '');
   const { data: totalCertificates } = useTotalCertificates();
   const { data: recipientCerts } = useRecipientCertificates(address || '');

@@ -25,6 +25,16 @@ module.exports = {
     }
   },
   networks: {
+    hardhat: {
+      chainId: 31337,
+      // Speed up tests with faster mining
+      mining: {
+        auto: true,
+        interval: 0
+      },
+      // Reduce block gas limit for faster execution
+      blockGasLimit: 30000000,
+    },
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL || "https://rpc.sepolia.org",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
@@ -39,5 +49,11 @@ module.exports = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY || ""
+  },
+  mocha: {
+    timeout: 40000,
+    // Faster test execution
+    bail: false,
+    reporter: 'spec',
   }
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { useIssuerInfo, useIsAuthorizedIssuer } from '@/hooks/useContract';
 import { Button } from '@/components/ui/Button';
@@ -8,14 +8,32 @@ import { isContractConfigured } from '@/lib/wagmi-config';
 import { getDemoIssuer, getAllDemoIssuers } from '@/lib/demo-data';
 
 export default function IssuersPage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   const { address } = useAccount();
-  const { data: isAuthorized } = useIsAuthorizedIssuer(address || '');
+  const { data: isAuthorized } = useIsAuthorizedIssuer(mounted ? address || '' : '');
   const isDemoMode = !isContractConfigured();
   
   const [searchAddress, setSearchAddress] = useState('');
   const [searched, setSearched] = useState(false);
   
-  const { data: issuerInfo, isLoading } = useIssuerInfo(searchAddress || '');
+  // Only call wagmi hooks after mount to avoid SSR issues
+  const { data: issuerInfo, isLoading } = useIssuerInfo(mounted ? searchAddress || '' : '');
 
   // Demo mode data
   const demoIssuerInfo = isDemoMode && searched ? getDemoIssuer(searchAddress) : null;

@@ -13,7 +13,6 @@ const CONTRACT_ABI = parseAbi([
   'function getRecipientCertificates(address recipient) view returns (uint256[])',
   'function totalCertificates() view returns (uint256)',
   'function ownerOf(uint256 tokenId) view returns (address)',
-  'function tokenURI(uint256 tokenId) view returns (string)',
   
   // Write functions
   'function issueCertificate(address recipient, string recipientName, string certificateTitle, string courseName, string institution, string grade, string metadataURI) returns (uint256)',
@@ -27,30 +26,32 @@ const CONTRACT_ABI = parseAbi([
   'event CertificateRevoked(uint256 indexed tokenId, address indexed issuer, uint256 revocationDate, string reason)',
 ]);
 
-export function useCertificate(tokenId: bigint) {
+export function useCertificate(tokenId: bigint | undefined) {
   const contractAddress = getContractAddress();
-  
+
   return useReadContract({
     address: contractAddress as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: 'getCertificate',
-    args: [tokenId],
+    args: tokenId !== undefined ? [tokenId] : undefined,
     query: {
       enabled: isContractConfigured() && tokenId !== undefined,
+      retry: 0,
     },
   });
 }
 
-export function useVerifyCertificate(tokenId: bigint) {
+export function useVerifyCertificate(tokenId: bigint | undefined) {
   const contractAddress = getContractAddress();
-  
+
   return useReadContract({
     address: contractAddress as `0x${string}`,
     abi: CONTRACT_ABI,
     functionName: 'verifyCertificate',
-    args: [tokenId],
+    args: tokenId !== undefined ? [tokenId] : undefined,
     query: {
       enabled: isContractConfigured() && tokenId !== undefined,
+      retry: 0,
     },
   });
 }

@@ -1,20 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAccount, useSwitchChain } from 'wagmi';
-import { useIssueCertificate, useIsAuthorizedIssuer, useRecipientCertificates, useTotalCertificates } from '@/hooks/useContract';
 import { Button } from '@/components/ui/Button';
-import { isContractConfigured } from '@/lib/wagmi-config';
-import { MetadataProviderFactory } from '@/lib/metadata-provider';
-import { isDemoAuthorizedIssuer, DEMO_ISSUERS } from '@/lib/demo-data';
-import { sepolia } from 'wagmi/chains';
+import { DEMO_ISSUERS } from '@/lib/demo-data';
 
 export const dynamic = 'force-dynamic';
 
 export default function IssuerDashboard() {
   const [mounted, setMounted] = useState(false);
-  const { address, isConnected, chain } = useAccount();
-  const { switchChain } = useSwitchChain();
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    recipient: '',
+    recipientName: 'Kommavarapu Kanmeswari Sreevalli',
+    certificateTitle: '',
+    courseName: '',
+    institution: '',
+    grade: '',
+  });
+  const [previewMode, setPreviewMode] = useState(false);
+  const [demoIssued, setDemoIssued] = useState(false);
+  const [demoTokenId, setDemoTokenId] = useState('');
 
   useEffect(() => {
     setMounted(true);
@@ -30,28 +35,6 @@ export default function IssuerDashboard() {
       </div>
     );
   }
-
-  const isDemoMode = !isContractConfigured();
-
-  // Call wagmi hooks directly - the providers handle hydration
-  const { data: isAuthorized } = useIsAuthorizedIssuer(mounted ? address || '' : '');
-  const { data: totalCertificates } = useTotalCertificates();
-  const { data: recipientCerts } = useRecipientCertificates(mounted ? address || '' : '');
-  
-  const { issueCertificate, isPending, isConfirming, isSuccess, hash, error } = useIssueCertificate();
-  
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    recipient: '',
-    recipientName: 'Kommavarapu Kanmeswari Sreevalli',
-    certificateTitle: '',
-    courseName: '',
-    institution: '',
-    grade: '',
-  });
-  const [previewMode, setPreviewMode] = useState(false);
-  const [demoIssued, setDemoIssued] = useState(false);
-  const [demoTokenId, setDemoTokenId] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -69,51 +52,13 @@ export default function IssuerDashboard() {
   };
 
   const handleIssue = async () => {
-    if (isDemoMode) {
-      // Demo mode - simulate certificate issuance
-      setDemoIssued(true);
-      setDemoTokenId('DEMO-' + Math.floor(Math.random() * 1000));
-      setTimeout(() => {
-        setShowForm(false);
-        setPreviewMode(false);
-        setDemoIssued(false);
-        setFormData({
-          recipient: '',
-          recipientName: 'Kommavarapu Kanmeswari Sreevalli',
-          certificateTitle: '',
-          courseName: '',
-          institution: '',
-          grade: '',
-        });
-      }, 3000);
-      return;
-    }
-
-    try {
-      const metadata = MetadataProviderFactory.createCertificateMetadata(
-        formData.recipientName,
-        formData.certificateTitle,
-        formData.courseName,
-        formData.institution,
-        formData.grade,
-        new Date()
-      );
-
-      const provider = MetadataProviderFactory.getProvider();
-      const metadataURI = await provider.uploadMetadata(metadata);
-
-      await issueCertificate(
-        formData.recipient as `0x${string}`,
-        formData.recipientName,
-        formData.certificateTitle,
-        formData.courseName,
-        formData.institution,
-        formData.grade,
-        metadataURI
-      );
-
+    // Demo mode - simulate certificate issuance
+    setDemoIssued(true);
+    setDemoTokenId('DEMO-' + Math.floor(Math.random() * 1000));
+    setTimeout(() => {
       setShowForm(false);
       setPreviewMode(false);
+      setDemoIssued(false);
       setFormData({
         recipient: '',
         recipientName: 'Kommavarapu Kanmeswari Sreevalli',
@@ -122,68 +67,11 @@ export default function IssuerDashboard() {
         institution: '',
         grade: '',
       });
-    } catch (err) {
-      console.error('Error issuing certificate:', err);
-    }
+    }, 3000);
   };
 
-  const displayIsAuthorized = isDemoMode ? true : isAuthorized;
-  const displayTotalCertificates = isDemoMode ? '12' : (totalCertificates?.toString() || '0');
-  const displayRecipientCerts = isDemoMode ? [] : ((recipientCerts as any) || []);
-
-  if (!isDemoMode && !isConnected) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Connect Wallet</h3>
-            <p className="text-gray-600 mb-4">
-              Connect your wallet to access the issuer dashboard.
-            </p>
-            <Button onClick={() => window.location.reload()}>
-              Connect Wallet
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isDemoMode && chain?.id !== sepolia.id) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Wrong Network</h3>
-            <p className="text-gray-600 mb-4">
-              Please switch to Sepolia testnet to issue certificates.
-            </p>
-            <Button onClick={() => switchChain({ chainId: sepolia.id })}>
-              Switch to Sepolia
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isDemoMode && displayIsAuthorized === false) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Not Authorized</h3>
-            <p className="text-gray-600 mb-4">
-              You are not authorized to issue certificates. Contact an administrator.
-            </p>
-            <Button onClick={() => window.location.href = '/'}>
-              Return Home
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const displayTotalCertificates = '12';
+  const displayRecipientCerts = [];
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -222,7 +110,7 @@ export default function IssuerDashboard() {
         {/* Issue Certificate Button */}
         <div className="mb-8">
           <Button onClick={() => setShowForm(true)} size="lg">
-            {isDemoMode ? 'Issue Demo Certificate' : 'Issue New Certificate'}
+            Issue Demo Certificate
           </Button>
         </div>
 
@@ -256,28 +144,10 @@ export default function IssuerDashboard() {
                 </div>
 
                 {/* Transaction Status */}
-                {(isPending || isConfirming || isSuccess || demoIssued) && (
-                  <div className={`p-4 rounded-lg ${
-                    isSuccess || demoIssued ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'
-                  }`}>
-                    {isPending && (
-                      <p className="text-blue-900">Waiting for wallet confirmation...</p>
-                    )}
-                    {isConfirming && (
-                      <p className="text-blue-900">Confirming on Sepolia...</p>
-                    )}
-                    {isSuccess && (
-                      <p className="text-green-900">Certificate issued successfully!</p>
-                    )}
-                    {demoIssued && (
-                      <p className="text-green-900">Certificate issued (DEMO MODE)!</p>
-                    )}
-                    {hash && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        Transaction: {(hash as string).slice(0, 10)}...{(hash as string).slice(-8)}
-                      </p>
-                    )}
-                    {demoIssued && demoTokenId && (
+                {demoIssued && (
+                  <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                    <p className="text-green-900">Certificate issued (DEMO MODE)!</p>
+                    {demoTokenId && (
                       <p className="text-sm text-gray-600 mt-2">
                         Demo Token ID: {demoTokenId}
                       </p>
@@ -292,9 +162,9 @@ export default function IssuerDashboard() {
                   </Button>
                   <Button 
                     onClick={handleIssue} 
-                    disabled={isPending || isConfirming || demoIssued}
+                    disabled={demoIssued}
                   >
-                    {isPending ? 'Confirming...' : isConfirming ? 'Issuing...' : 'Issue Certificate'}
+                    {demoIssued ? 'Issuing...' : 'Issue Certificate'}
                   </Button>
                 </div>
               </div>
@@ -384,12 +254,6 @@ export default function IssuerDashboard() {
                   />
                 </div>
 
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-900">{error.message}</p>
-                  </div>
-                )}
-
                 <div className="flex gap-4">
                   <Button onClick={() => setShowForm(false)} variant="outline">
                     Cancel
@@ -404,28 +268,24 @@ export default function IssuerDashboard() {
         )}
 
         {/* Recent Certificates */}
-        {displayRecipientCerts.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Recent Certificates</h2>
-            <div className="space-y-4">
-              {displayRecipientCerts.slice(0, 5).map((tokenId: bigint) => (
-                <div key={tokenId.toString()} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                  <div>
-                    <p className="font-medium text-gray-900">Token ID: {tokenId.toString()}</p>
-                    <p className="text-sm text-gray-600">Issued to your wallet</p>
-                  </div>
-                  <Button
-                    onClick={() => window.location.href = `/certificate/${tokenId}`}
-                    variant="outline"
-                    size="sm"
-                  >
-                    View
-                  </Button>
-                </div>
-              ))}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Demo Certificates</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+              <div>
+                <p className="font-medium text-gray-900">Token ID: DEMO-1</p>
+                <p className="text-sm text-gray-600">Demo certificate</p>
+              </div>
+              <Button
+                onClick={() => window.location.href = '/certificate/1'}
+                variant="outline"
+                size="sm"
+              >
+                View
+              </Button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

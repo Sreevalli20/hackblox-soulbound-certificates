@@ -45,5 +45,7 @@ export function getContractAddress(): string {
 }
 
 export function isContractConfigured(): boolean {
-  return true; // Always configured in production
+  // In production, we always have the contract configured
+  // The real contract address is set above
+  return true;
 }

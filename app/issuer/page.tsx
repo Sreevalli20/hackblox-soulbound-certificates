@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { useIssueCertificate, useIsAuthorizedIssuer, useRecipientCertificates, useTotalCertificates } from '@/hooks/useContract';
 import { Button } from '@/components/ui/Button';
@@ -12,13 +12,31 @@ import { sepolia } from 'wagmi/chains';
 export const dynamic = 'force-dynamic';
 
 export default function IssuerDashboard() {
+  const [mounted, setMounted] = useState(false);
   const { address, isConnected, chain } = useAccount();
   const { switchChain } = useSwitchChain();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isDemoMode = !isContractConfigured();
+
   // Call wagmi hooks directly - the providers handle hydration
-  const { data: isAuthorized } = useIsAuthorizedIssuer(address || '');
+  const { data: isAuthorized } = useIsAuthorizedIssuer(mounted ? address || '' : '');
   const { data: totalCertificates } = useTotalCertificates();
-  const { data: recipientCerts } = useRecipientCertificates(address || '');
+  const { data: recipientCerts } = useRecipientCertificates(mounted ? address || '' : '');
   
   const { issueCertificate, isPending, isConfirming, isSuccess, hash, error } = useIssueCertificate();
   
@@ -51,6 +69,25 @@ export default function IssuerDashboard() {
   };
 
   const handleIssue = async () => {
+    if (isDemoMode) {
+      // Demo mode - simulate certificate issuance
+      setDemoIssued(true);
+      setDemoTokenId('DEMO-' + Math.floor(Math.random() * 1000));
+      setTimeout(() => {
+        setShowForm(false);
+        setPreviewMode(false);
+        setDemoIssued(false);
+        setFormData({
+          recipient: '',
+          recipientName: 'Kommavarapu Kanmeswari Sreevalli',
+          certificateTitle: '',
+          courseName: '',
+          institution: '',
+          grade: '',
+        });
+      }, 3000);
+      return;
+    }
 
     try {
       const metadata = MetadataProviderFactory.createCertificateMetadata(
@@ -90,11 +127,11 @@ export default function IssuerDashboard() {
     }
   };
 
-  const displayIsAuthorized = isAuthorized;
-  const displayTotalCertificates = totalCertificates?.toString() || '0';
-  const displayRecipientCerts = (recipientCerts as any) || [];
+  const displayIsAuthorized = isDemoMode ? true : isAuthorized;
+  const displayTotalCertificates = isDemoMode ? '12' : (totalCertificates?.toString() || '0');
+  const displayRecipientCerts = isDemoMode ? [] : ((recipientCerts as any) || []);
 
-  if (!isConnected) {
+  if (!isDemoMode && !isConnected) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -112,7 +149,7 @@ export default function IssuerDashboard() {
     );
   }
 
-  if (chain?.id !== sepolia.id) {
+  if (!isDemoMode && chain?.id !== sepolia.id) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -130,7 +167,7 @@ export default function IssuerDashboard() {
     );
   }
 
-  if (displayIsAuthorized === false) {
+  if (!isDemoMode && displayIsAuthorized === false) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
@@ -185,7 +222,7 @@ export default function IssuerDashboard() {
         {/* Issue Certificate Button */}
         <div className="mb-8">
           <Button onClick={() => setShowForm(true)} size="lg">
-            Issue New Certificate
+            {isDemoMode ? 'Issue Demo Certificate' : 'Issue New Certificate'}
           </Button>
         </div>
 

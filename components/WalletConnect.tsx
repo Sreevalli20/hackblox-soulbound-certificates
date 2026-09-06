@@ -4,6 +4,7 @@ import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi';
 import { Button } from './ui/Button';
 import { sepolia } from 'wagmi/chains';
 import { useEffect, useState } from 'react';
+import { isContractConfigured } from '@/lib/wagmi-config';
 
 export function WalletConnect() {
   const [mounted, setMounted] = useState(false);
@@ -17,9 +18,16 @@ export function WalletConnect() {
   }, []);
 
   if (!mounted) {
-    return null;
+    return (
+      <div className="flex items-center gap-2">
+        <Button size="sm" disabled>
+          Loading...
+        </Button>
+      </div>
+    );
   }
 
+  const isDemoMode = !isContractConfigured();
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
@@ -29,6 +37,23 @@ export function WalletConnect() {
       switchChain({ chainId: sepolia.id });
     }
   };
+
+  if (isDemoMode) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="text-sm text-gray-600">
+          <span className="text-blue-600">● Demo Mode</span>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled
+        >
+          No Wallet Required
+        </Button>
+      </div>
+    );
+  }
 
   if (isConnected && address) {
     return (

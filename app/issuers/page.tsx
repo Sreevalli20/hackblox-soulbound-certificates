@@ -26,13 +26,13 @@ export default function IssuersPage() {
   }
 
   const { address } = useAccount();
-  const { data: isAuthorized } = useIsAuthorizedIssuer(mounted ? address || '' : '');
   const isDemoMode = !isContractConfigured();
   
   const [searchAddress, setSearchAddress] = useState('');
   const [searched, setSearched] = useState(false);
   
   // Only call wagmi hooks after mount to avoid SSR issues
+  const { data: isAuthorized } = useIsAuthorizedIssuer(mounted ? address || '' : '');
   const { data: issuerInfo, isLoading } = useIssuerInfo(mounted ? searchAddress || '' : '');
 
   // Demo mode data
@@ -51,21 +51,6 @@ export default function IssuersPage() {
 
   const displayIssuerInfo = isDemoMode ? demoIssuerInfo : issuerInfo;
   const displayIsLoading = isDemoMode ? false : isLoading;
-
-  if (!isDemoMode && !isContractConfigured()) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Contract Not Configured</h3>
-            <p className="text-gray-600">
-              Please set NEXT_PUBLIC_CONTRACT_ADDRESS in your environment variables.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
